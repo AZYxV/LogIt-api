@@ -17,15 +17,16 @@ class UserController extends AbstractController
 {
 
     #[Route('/register', name: 'register', methods: ['POST'])]
-    public function register(Request $request, ValidatorInterface $validator, EntityManagerInterface $em, UserPasswordHasherInterface $passwordHasher): JsonResponse
-    {
-        $data = json_decode($request->getContent(), true);
+    public function register(
+        Request $request,
+        ValidatorInterface $validator,
+        EntityManagerInterface $em,
+        UserPasswordHasherInterface $passwordHasher
+    ): JsonResponse {
+        try {
+            $data = json_decode($request->getContent(), true);
 
-        try
-        {
-
-            $user = new User;
-
+            $user = new User();
             $user->setPseudo($data['pseudo'] ?? null);
             $user->setEmail($data['email'] ?? null);
             $user->setPassword($data['password'] ?? null);
@@ -34,7 +35,7 @@ class UserController extends AbstractController
             $parsedDate = date_create($birthday);
 
             if (!$parsedDate) {
-                return new JsonResponse(['message' => 'La date de naissance est invalide.'], 400);
+                return new JsonResponse(['message' => 'La date de naissance est invalide.'], Response::HTTP_BAD_REQUEST);
             }
             $user->setBirthday($parsedDate);
 
@@ -46,26 +47,25 @@ class UserController extends AbstractController
             $errors = $validator->validate($user);
 
             if (count($errors) > 0) {
-                $errorMessages = [];
-
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
+                $errorMessages = array_map(
+                    fn ($error) => $error->getMessage(),
+                    iterator_to_array($errors)
+                );
 
                 return new JsonResponse(['code' => Response::HTTP_BAD_REQUEST, 'status' => 'error', 'message' => $errorMessages], Response::HTTP_BAD_REQUEST);
             }
 
-            $user->setPassword($passwordHasher->hashPassword($user, $data['password']) ?? null);
+            $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
+            $user->setPassword($hashedPassword);
 
             $em->persist($user);
             $em->flush();
 
-            return new JsonResponse(['code' => Response::HTTP_CREATED,'status' => 'success'],Response::HTTP_CREATED);
-        }
-        catch (\Exception $e)
-        {
+            return new JsonResponse(['code' => Response::HTTP_CREATED, 'status' => 'success'], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
             return new JsonResponse(['code' => Response::HTTP_INTERNAL_SERVER_ERROR, 'status' => 'error', 'message' => $e->getMessage()], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
 
 }

@@ -38,11 +38,10 @@ class LogController extends AbstractController
             $errors = $validator->validate($log);
 
             if (count($errors) > 0) {
-                $errorMessages = [];
-
-                foreach ($errors as $error) {
-                    $errorMessages[] = $error->getMessage();
-                }
+                $errorMessages = array_map(
+                    fn ($error) => $error->getMessage(),
+                    iterator_to_array($errors)
+                );
 
                 return new JsonResponse(['code' => Response::HTTP_BAD_REQUEST, 'status' => 'error', 'message' => $errorMessages], Response::HTTP_BAD_REQUEST);
             }
