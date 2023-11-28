@@ -6,6 +6,7 @@ use App\Entity\Article;
 use App\Repository\ArticleRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,6 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
 #[Route('/api')]
 class ArticleController extends AbstractController
@@ -29,8 +32,8 @@ class ArticleController extends AbstractController
         try {
 
             $article = new Article;
-            $article->setTitle($data['title']);
-            $article->setContent($data['content']);
+            $article->setTitle($data['title'] ?? '');
+            $article->setContent($data['content'] ?? '');
             $article->setAuthor($user);
             $article->setCreatedAt(new DateTimeImmutable());
             $article->setUpdatedAt(new DateTimeImmutable());
@@ -57,12 +60,21 @@ class ArticleController extends AbstractController
     }
 
     #[Route('/article', name: 'api_articles', methods: ['GET'])]
-    public function getArticles(ArticleRepository $ArticleRepository, SerializerInterface $serializer): JsonResponse
+    public function getArticle(ArticleRepository $ArticleRepository, SerializerInterface $serializer, TagAwareCacheInterface $cache, Request $request): JsonResponse
     {
 
         try {
 
-            $articles = $ArticleRepository->findAll();
+            $page = $request->get('page', 1);
+            $limit = $request->get('limit', 3);
+
+            $idCache = "getArticle-" . $page . "-" . $limit;
+
+            $articles = $cache->get($idCache, function (ItemInterface $item) use ($ArticleRepository, $page, $limit) {
+                $item->tag('articlesCache');
+                $item->expiresAfter(60);
+                return $ArticleRepository->findAllWithPagination($page, $limit);
+            });
 
             if(!$articles)
             {
@@ -72,7 +84,7 @@ class ArticleController extends AbstractController
             return new JsonResponse($serializer->serialize(['code' => Response::HTTP_OK, 'status' => 'success', 'result' => $articles],'json'), Response::HTTP_OK, [], true);
 
         }
-        catch(\Exception $e)
+        catch(\Exception|InvalidArgumentException $e)
         {
             return new JsonResponse(['code' => Response::HTTP_INTERNAL_SERVER_ERROR, 'status' => 'error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
@@ -96,7 +108,7 @@ class ArticleController extends AbstractController
     }
 
     #[Route('/article/{id}/edit', name: 'api_article_edit', methods: ['PUT'])]
-    public function editArticle($id, Request $request, Article $article, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+    public function editArticle($id, Request $request, Article $article, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator, TagAwareCacheInterface $cache): JsonResponse
     {
         try {
             if (!$article) {
@@ -123,14 +135,19 @@ class ArticleController extends AbstractController
 
             $em->flush();
 
+            if($cache->hasItem('articlesCache'))
+            {
+                $cache->invalidateTags(['articlesCache']);
+            }
+
             return new JsonResponse(['code' => Response::HTTP_OK, 'status' => 'success'], Response::HTTP_OK);
-        } catch (\Exception $e) {
+        } catch (\Exception|InvalidArgumentException $e) {
             return new JsonResponse(['code' => Response::HTTP_INTERNAL_SERVER_ERROR, 'status' => 'error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
     #[Route('/article/{id}/delete', name: 'api_article_delete', methods: ['DELETE'])]
-    public function deleteArticle($id, ArticleRepository $articleRepository, EntityManagerInterface $em): JsonResponse
+    public function deleteArticle($id, ArticleRepository $articleRepository, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
         try {
             $article = $articleRepository->find($id);
@@ -139,11 +156,16 @@ class ArticleController extends AbstractController
                 return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Cet article n\'existe pas.'], Response::HTTP_NOT_FOUND);
             }
 
+            if($cache->hasItem('articlesCache'))
+            {
+                $cache->invalidateTags(['articlesCache']);
+            }
+
             $em->remove($article);
             $em->flush();
 
             return new JsonResponse(['code' => Response::HTTP_OK, 'status' => 'success'], Response::HTTP_OK);
-        } catch (\Exception $e) {
+        } catch (\Exception|InvalidArgumentException $e) {
             return new JsonResponse(['code' => Response::HTTP_INTERNAL_SERVER_ERROR, 'status' => 'error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
