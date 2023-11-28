@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -29,7 +30,8 @@ class ArticleController extends AbstractController
 
         $user = $this->getUser();
 
-        try {
+        try
+        {
 
             $article = new Article;
             $article->setTitle($data['title'] ?? '');
@@ -54,7 +56,9 @@ class ArticleController extends AbstractController
             $em->flush();
 
             return new JsonResponse(['code' => Response::HTTP_CREATED,'status' => 'success'],Response::HTTP_CREATED);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e)
+        {
             return new JsonResponse(['code' => Response::HTTP_INTERNAL_SERVER_ERROR, 'status' => 'error'], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
@@ -115,6 +119,11 @@ class ArticleController extends AbstractController
                 return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Cet article n\'existe pas.'], Response::HTTP_NOT_FOUND);
             }
 
+            $user = $this->getUser();
+            if (!$this->isGranted('ROLE_ADMIN') && !($this->isGranted('ROLE_USER') && $user === $article->getAuthor())) {
+                return new JsonResponse(['code' => Response::HTTP_FORBIDDEN, 'status' => 'error', 'message' => 'Vous n\'avez pas les droits nécessaires pour modifier cet article.'], Response::HTTP_FORBIDDEN);
+            }
+
             $data = $serializer->deserialize($request->getContent(), Article::class, 'json');
 
             $article->setTitle($data->getTitle() ?? $article->getTitle());
@@ -154,6 +163,11 @@ class ArticleController extends AbstractController
 
             if (!$article) {
                 return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Cet article n\'existe pas.'], Response::HTTP_NOT_FOUND);
+            }
+
+            $user = $this->getUser();
+            if (!$this->isGranted('ROLE_ADMIN') && !($this->isGranted('ROLE_USER') && $user === $article->getAuthor())) {
+                return new JsonResponse(['code' => Response::HTTP_FORBIDDEN, 'status' => 'error', 'message' => 'Vous n\'avez pas les droits nécessaires pour supprimer cet article.'], Response::HTTP_FORBIDDEN);
             }
 
             if($cache->hasItem('articlesCache'))

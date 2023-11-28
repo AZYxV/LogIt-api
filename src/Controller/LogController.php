@@ -114,6 +114,11 @@ class LogController extends AbstractController
                 return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Ce log n\'existe pas.'], Response::HTTP_NOT_FOUND);
             }
 
+            $user = $this->getUser();
+            if (!$this->isGranted('ROLE_ADMIN') && !($this->isGranted('ROLE_USER') && $user === $log->getAuthor())) {
+                return new JsonResponse(['code' => Response::HTTP_FORBIDDEN, 'status' => 'error', 'message' => 'Vous n\'avez pas les droits nécessaires pour supprimer ce log.'], Response::HTTP_FORBIDDEN);
+            }
+
             if($cache->hasItem('logsCache'))
             {
                 $cache->invalidateTags(['logsCache']);
