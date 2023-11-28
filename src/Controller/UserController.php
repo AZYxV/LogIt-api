@@ -42,7 +42,7 @@ class UserController extends AbstractController
             $user->setFirstname($data['firstname'] ?? null);
             $user->setLastname($data['lastname'] ?? null);
             $user->setRoles(['ROLE_USER']);
-            $user->setCreatedAt(new \DateTimeImmutable());
+            $user->setCreatedAt(new DateTimeImmutable());
 
             $errors = $validator->validate($user);
 
