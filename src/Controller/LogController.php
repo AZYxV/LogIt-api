@@ -2,9 +2,7 @@
 
 namespace App\Controller;
 
-use App\Entity\Article;
 use App\Entity\Log;
-use App\Repository\ArticleRepository;
 use App\Repository\LogRepository;
 use DateTimeImmutable;
 use Doctrine\ORM\EntityManagerInterface;
@@ -19,10 +17,10 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
-#[Route('/api')]
+#[Route('/log')]
 class LogController extends AbstractController
 {
-    #[Route('/log/new', name: 'api_log_new', methods: ['POST'])]
+    #[Route('/new', name: 'api_log_new', methods: ['POST'])]
     public function newArticle(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
     {
 
@@ -58,7 +56,7 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/log', name: 'api_logs', methods: ['GET'])]
+    #[Route('/', name: 'api_logs', methods: ['GET'])]
     public function getLog(LogRepository $LogRepository, SerializerInterface $serializer, TagAwareCacheInterface $cache, Request $request): JsonResponse
     {
 
@@ -89,7 +87,7 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/log/{id}', name: 'api_log', methods: ['GET'])]
+    #[Route('/{id}', name: 'api_log', methods: ['GET'])]
     public function getLogById($id, LogRepository $logRepository, SerializerInterface $serializer): JsonResponse
     {
         try {
@@ -106,14 +104,14 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/log/{id}/delete', name: 'api_log_delete', methods: ['DELETE'])]
+    #[Route('/{id}/delete', name: 'api_log_delete', methods: ['DELETE'])]
     public function deleteLog($id, LogRepository $logRepository, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
         try {
             $log = $logRepository->find($id);
 
             if (!$log) {
-                return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Ce logn\'existe pas.'], Response::HTTP_NOT_FOUND);
+                return new JsonResponse(['code' => Response::HTTP_NOT_FOUND, 'status' => 'error', 'message' => 'Ce log n\'existe pas.'], Response::HTTP_NOT_FOUND);
             }
 
             if($cache->hasItem('logsCache'))
