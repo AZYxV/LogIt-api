@@ -5,12 +5,15 @@ namespace App\Entity;
 use App\Repository\UsersRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Validator\Constraints as Assert;
 
 
 #[ORM\Entity(repositoryClass: UsersRepository::class)]
+#[UniqueEntity(fields: ['pseudo'], message: "Ce pseudo est déjà utilisé.")]
+#[UniqueEntity(fields: ['email'], message: "Cette adresse mail est déjà utilisée.")]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -47,12 +50,10 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
      * @var string The hashed password
      */
     #[ORM\Column]
-    #[Assert\NotBlank(
-        message: "Ce champs est requis.",
-    )]
+    #[Assert\NotBlank(message: "Ce champ est requis.")]
     #[Assert\Regex(
         pattern: "/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$/",
-        message:"Le mot de passe doit contenir au moins 8 caractères, dont au moins une lettre minuscule, une lettre majuscule, un chiffre et un caractère spécial."
+        message: "Le mot de passe doit contenir au moins 8 caractères, dont au moins une lettre minuscule, une lettre majuscule, un chiffre et un caractère spécial."
     )]
     private ?string $password = null;
 
@@ -99,7 +100,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->email;
     }
 
-    public function setEmail(string $email): static
+    public function setEmail(?string $email): static
     {
         $this->email = $email;
 
@@ -111,7 +112,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->pseudo;
     }
 
-    public function setPseudo(string $pseudo): static
+    public function setPseudo(?string $pseudo): static
     {
         $this->pseudo = $pseudo;
 
@@ -155,7 +156,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->password;
     }
 
-    public function setPassword(string $password): static
+    public function setPassword(?string $password): static
     {
         $this->password = $password;
 
@@ -188,7 +189,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->firstname;
     }
 
-    public function setFirstname(string $firstname): static
+    public function setFirstname(?string $firstname): static
     {
         $this->firstname = $firstname;
 
@@ -200,7 +201,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->lastname;
     }
 
-    public function setLastname(string $lastname): static
+    public function setLastname(?string $lastname): static
     {
         $this->lastname = $lastname;
 
