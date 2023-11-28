@@ -17,12 +17,12 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
-#[Route('/article')]
+#[Route('/api')]
 class ArticleController extends AbstractController
 {
 
-    #[Route('/new', name: 'api_article_new', methods: ['POST'])]
-    public function newArticle(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+    #[Route('/article/new', name: 'api_article_new', methods: ['POST'])]
+    public function newArticle(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -59,7 +59,7 @@ class ArticleController extends AbstractController
         }
     }
 
-    #[Route('/', name: 'api_articles', methods: ['GET'])]
+    #[Route('/article', name: 'api_articles', methods: ['GET'])]
     public function getArticle(ArticleRepository $ArticleRepository, SerializerInterface $serializer, TagAwareCacheInterface $cache, Request $request): JsonResponse
     {
 
@@ -90,7 +90,7 @@ class ArticleController extends AbstractController
         }
     }
 
-    #[Route('/{id}', name: 'api_article', methods: ['GET'])]
+    #[Route('/article/{id}', name: 'api_article', methods: ['GET'])]
     public function getArticleById($id, ArticleRepository $articleRepository, SerializerInterface $serializer): JsonResponse
     {
         try {
@@ -107,7 +107,7 @@ class ArticleController extends AbstractController
         }
     }
 
-    #[Route('/{id}/edit', name: 'api_article_edit', methods: ['PUT'])]
+    #[Route('/article/{id}/edit', name: 'api_article_edit', methods: ['PUT'])]
     public function editArticle($id, Request $request, Article $article, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator, TagAwareCacheInterface $cache): JsonResponse
     {
         try {
@@ -146,7 +146,7 @@ class ArticleController extends AbstractController
         }
     }
 
-    #[Route('/{id}/delete', name: 'api_article_delete', methods: ['DELETE'])]
+    #[Route('/article/{id}/delete', name: 'api_article_delete', methods: ['DELETE'])]
     public function deleteArticle($id, ArticleRepository $articleRepository, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
         try {

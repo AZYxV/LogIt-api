@@ -17,11 +17,11 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Cache\TagAwareCacheInterface;
 
-#[Route('/log')]
+#[Route('/api')]
 class LogController extends AbstractController
 {
-    #[Route('/new', name: 'api_log_new', methods: ['POST'])]
-    public function newArticle(Request $request, SerializerInterface $serializer, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
+    #[Route('/log/new', name: 'api_log_new', methods: ['POST'])]
+    public function newArticle(Request $request, EntityManagerInterface $em, ValidatorInterface $validator): JsonResponse
     {
 
         $data = json_decode($request->getContent(), true);
@@ -56,7 +56,7 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/', name: 'api_logs', methods: ['GET'])]
+    #[Route('/log', name: 'api_logs', methods: ['GET'])]
     public function getLog(LogRepository $LogRepository, SerializerInterface $serializer, TagAwareCacheInterface $cache, Request $request): JsonResponse
     {
 
@@ -87,7 +87,7 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/{id}', name: 'api_log', methods: ['GET'])]
+    #[Route('/log/{id}', name: 'api_log', methods: ['GET'])]
     public function getLogById($id, LogRepository $logRepository, SerializerInterface $serializer): JsonResponse
     {
         try {
@@ -104,7 +104,7 @@ class LogController extends AbstractController
         }
     }
 
-    #[Route('/{id}/delete', name: 'api_log_delete', methods: ['DELETE'])]
+    #[Route('/log/{id}/delete', name: 'api_log_delete', methods: ['DELETE'])]
     public function deleteLog($id, LogRepository $logRepository, EntityManagerInterface $em, TagAwareCacheInterface $cache): JsonResponse
     {
         try {
